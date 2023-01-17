@@ -28,36 +28,42 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
     constructor(){}
 
     modifier onlyDoctor(address _doctor){
-        require(hasRole(DOCTOR_ROLE, _doctor) == true, "is not doctor");
+        require(isDoctor(_doctor), "is not doctor");
         _;
     }
-    modifier onlyPatient(address _patient){
-        require(msg.sender == _patient, "is not same address");
+    
+    modifier onlyMsgSender(address _user){
+        require(msg.sender == _user, "the address is not the sender's");
         _;
     }
 
     modifier onlyApproved(address _patient, address _viewer){
-        require(isApproved(_patient, _viewer) == true, "Viewer is not approved for view the data");
+        require(isApproved(_patient, _viewer) == true, "is not approved to view the data");
         _;
     }
     modifier patientExists(address _patient) {
-        require(patients[_patient].lastUpdated == 0, "patient does not exist");
+        require(patients[_patient].lastUpdated != 0, "patient does not exist");
+        _;
+    }
+
+    modifier onlyViewer(address _patient, address _viewer){
+        require(isAuthorized(_patient, _viewer), "is not an authorized user to view data");
         _;
     }
 
     // 患者の登録
-    function registerPatient(address _patient, string memory _name, Enum.BloodType _bloodType) public onlyPatient(_patient) {
+    function registerPatient(address _patient, string memory _name, Enum.BloodType _bloodType) public onlyMsgSender(_patient) {
         Patient memory patient = Patient(_name, _bloodType, block.timestamp);
         patients[_patient] = patient;
         emit PatientRegistered(_patient, patient.name, patient.bloodType, patient.lastUpdated);
     }
     // 医療従事者の登録
-    function registerDoctor(address _doctor) public {
+    function registerDoctor(address _doctor) public onlyMsgSender(_doctor) {
         _grantRole(DOCTOR_ROLE, _doctor);
         emit DoctorRegistered(_doctor, block.timestamp);
     }
     // 医療従事者の削除
-    function removeDoctor(address _doctor) public {
+    function removeDoctor(address _doctor) public onlyDoctor(msg.sender) {
         _revokeRole(DOCTOR_ROLE, _doctor);
         emit DoctorRemoved(_doctor, block.timestamp);
     }
@@ -70,13 +76,13 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
         emit PatientUpdated(_patient, patient.name, patient.bloodType, patient.lastUpdated);
     }
     // 患者データの閲覧権限付与
-    function approveViewData(address _patient, address _viewer) public onlyPatient(_patient) {
+    function approveViewData(address _patient, address _viewer) public onlyMsgSender(_patient) {
         bytes32 role = bytes32(bytes20(_patient));
         _grantRole(role, _viewer);
         emit ApproveViewData(_patient, _viewer);
     }
     // 患者データの閲覧権限削除
-    function disapproveViewData(address _patient, address _viewer) public onlyPatient(_patient) {
+    function disapproveViewData(address _patient, address _viewer) public onlyMsgSender(_patient) {
         bytes32 role = bytes32(bytes20(_patient));
         _revokeRole(role, _viewer);
         emit DisapproveViewData(_patient, _viewer);
@@ -91,12 +97,20 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
         return isApproved(_patient, msg.sender);
     }
 
-    function getPatientData(address _patient) public patientExists(_patient) onlyDoctor(msg.sender) onlyApproved(_patient, msg.sender) view returns (Patient memory) {
+    function getPatientData(address _patient) public patientExists(_patient) onlyViewer(_patient, msg.sender) view returns (Patient memory) {
         return patients[_patient];
     }
 
-    function isApproved(address _patient, address _viewer) private view returns (bool) {
+    function isApproved(address _patient, address _viewer) public view returns (bool) {
         bytes32 role = bytes32(bytes20(_patient));
         return hasRole(role, _viewer);
+    }
+
+    function isDoctor(address _doctor) public view returns (bool) {
+        return hasRole(DOCTOR_ROLE, _doctor);
+    }
+
+    function isAuthorized(address _patient, address _viewer) internal view returns (bool) {
+        return _patient == _viewer || (isApproved(_patient, _viewer) && hasRole(DOCTOR_ROLE, _viewer));
     }
 }

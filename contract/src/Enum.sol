@@ -13,19 +13,4 @@ contract Enum {
     
     // 列挙型の値
     BloodType internal bloodType;
-
-    // 列挙型の値の取得
-    // function get() internal view returns (BloodType) {
-    //     return bloodType;
-    // }
-
-    // // 列挙型の値の指定
-    // function set(BloodType _bloodType) public {
-    //     bloodType = _bloodType;
-    // }
-
-    // // 列挙型の値の削除
-    // function reset() public {
-    //     delete bloodType;
-    // }
 }

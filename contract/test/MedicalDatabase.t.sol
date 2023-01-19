@@ -38,6 +38,16 @@ contract MedicalDatabaseTest is Test {
         vm.stopPrank();
     }
 
+    function testRevert_PatientAlreadyRegistered() public {
+        vm.startPrank(patient);
+        Enum.BloodType bloodType = Enum.BloodType.O;
+        string memory name = "John Smith";
+        medicalDatabase.registerPatient(patient, name, bloodType);
+        vm.expectRevert("patient is already registered");
+        medicalDatabase.registerPatient(patient, name, bloodType);
+        vm.stopPrank();
+    }
+
     function testRegisterDoctor() public {
         address user = vm.addr(0x456);
         vm.startPrank(user);

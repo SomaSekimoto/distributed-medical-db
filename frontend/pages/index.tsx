@@ -1,16 +1,61 @@
 import Head from 'next/head'
-// import Image from 'next/image'
 import { Inter } from '@next/font/google'
 import Link from 'next/link'
-// import styles from '../styles/Home.module.css'
+import { useState } from "react"
+import { Signer, ethers } from "ethers"
+import { abi } from '../abi/DistributedMedicalDatabase'
 
 const inter = Inter({ subsets: ['latin'] })
 
-const walletConnect = () =>{
-  
-}
+
 
 export default function Home() {
+  const [isVerified, setIsVerified] = useState(false)
+  const [address, setAddress] = useState('')
+  const onClick = async () =>{
+    if (!window.ethereum) {
+      console.error('!window.ethereum')
+      return
+    }
+  
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    await provider.send('eth_requestAccounts', [])
+  
+    const signer = await provider.getSigner()
+    const message = 'connect your wallet to distributed medical database'
+    let address = await signer.getAddress()
+    setAddress(address)
+    const signature = await signer.signMessage(message)
+    const response = await fetch('/api/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({ message, address, signature }),
+    })
+  
+    const body = await response.json()
+    setIsVerified(body.isVerified)
+  }
+
+  const connectContract = async ()=>{
+    console.log('calling connect contract');
+    if(isVerified){
+      console.log('your address is ',  address)
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const signer = await provider.getSigner()
+      const contract = new ethers.Contract( "0x116b8Bd5D45145ffE21a0Eaa4f793C13eb0ccEF5" , abi , signer)
+      console.log('contract address is', contract.address)
+      const result = await contract.registerPatient(address, "soma", 2);
+      console.log('result is', result)
+      contract.on("PatientRegistered", (patient, name, bloodType, lastUpdated) => {
+        console.log(patient, name, bloodType, lastUpdated.toString());
+    });
+    }else{
+
+    }
+  }
+
   return (
     <>
       <Head>
@@ -22,9 +67,12 @@ export default function Home() {
       <div>
         <nav>
           <div className='order-1'>
-            aaa
+            <button onClick={onClick}>Sign</button>
+            {isVerified && <p>Verified!</p>}
           </div>
-          
+          <div>
+            <button onClick={connectContract}>call contract</button>
+          </div>
           <Link href={'https://httpbin.org/ip'} className='order-3'>
             your ip
           </Link>

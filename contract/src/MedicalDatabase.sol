@@ -17,13 +17,13 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
 
     bytes32 private constant DOCTOR_ROLE = 0x00;
 
-    event PatientRegistered(address patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
-    event PatientUpdated(address patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
-    event DoctorRegistered(address doctor, uint256 timestamp);
-    event DoctorRemoved(address doctor, uint256 timestamp);
-    event ApproveViewData(address patient, address viewer);
-    event DisapproveViewData(address patient, address viewer);
-    event Paid(address from, address to, uint256 value);
+    event PatientRegistered(address indexed patient, string indexed name, Enum.BloodType bloodType, uint256 lastUpdated);
+    event PatientUpdated(address indexed patient, string indexed name, Enum.BloodType bloodType, uint256 lastUpdated);
+    event DoctorRegistered(address indexed doctor, uint256 timestamp);
+    event DoctorRemoved(address indexed doctor, uint256 timestamp);
+    event ApproveViewData(address indexed patient, address viewer);
+    event DisapproveViewData(address indexed patient, address viewer);
+    event Paid(address indexed from, address to, uint256 value);
 
     constructor(){}
 
@@ -38,11 +38,11 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
     }
 
     modifier onlyApproved(address _patient, address _viewer){
-        require(isApproved(_patient, _viewer) == true, "is not approved to view the data");
+        require(isApproved(_patient, _viewer), "is not approved to view the data");
         _;
     }
     modifier patientExists(address _patient) {
-        require(patients[_patient].lastUpdated != 0, "patient does not exist");
+        require(patientRegistered(_patient), "patient does not exist");
         _;
     }
 
@@ -53,6 +53,7 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
 
     // 患者の登録
     function registerPatient(address _patient, string memory _name, Enum.BloodType _bloodType) public onlyMsgSender(_patient) {
+        require(patientRegistered(_patient) == false, "patient is already registered");
         Patient memory patient = Patient(_name, _bloodType, block.timestamp);
         patients[_patient] = patient;
         emit PatientRegistered(_patient, patient.name, patient.bloodType, patient.lastUpdated);
@@ -112,5 +113,9 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
 
     function isAuthorized(address _patient, address _viewer) internal view returns (bool) {
         return _patient == _viewer || (isApproved(_patient, _viewer) && hasRole(DOCTOR_ROLE, _viewer));
+    }
+
+    function patientRegistered(address _patient) internal view returns (bool) {
+        return patients[_patient].lastUpdated != 0;
     }
 }

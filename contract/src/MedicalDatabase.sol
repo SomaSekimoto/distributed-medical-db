@@ -17,8 +17,8 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
 
     bytes32 private constant DOCTOR_ROLE = 0x00;
 
-    event PatientRegistered(address indexed patient, string indexed name, Enum.BloodType bloodType, uint256 lastUpdated);
-    event PatientUpdated(address indexed patient, string indexed name, Enum.BloodType bloodType, uint256 lastUpdated);
+    event PatientRegistered(address indexed patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
+    event PatientUpdated(address indexed patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
     event DoctorRegistered(address indexed doctor, uint256 timestamp);
     event DoctorRemoved(address indexed doctor, uint256 timestamp);
     event ApproveViewData(address indexed patient, address viewer);

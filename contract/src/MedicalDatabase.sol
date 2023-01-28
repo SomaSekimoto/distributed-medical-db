@@ -19,6 +19,7 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
 
     event PatientRegistered(address indexed patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
     event PatientUpdated(address indexed patient, string name, Enum.BloodType bloodType, uint256 lastUpdated);
+    event PatientRemoved(address indexed patient);
     event DoctorRegistered(address indexed doctor, uint256 timestamp);
     event DoctorRemoved(address indexed doctor, uint256 timestamp);
     event ApproveViewData(address indexed patient, address viewer);
@@ -75,6 +76,11 @@ contract  MedicalDatabase is IMedicalDatabase, AccessControl {
         patient.bloodType = _bloodType;
         patient.lastUpdated = block.timestamp;
         emit PatientUpdated(_patient, patient.name, patient.bloodType, patient.lastUpdated);
+    }
+    // 患者データの削除
+    function removePatient(address _patient) public onlyDoctor(msg.sender) {
+        delete patients[_patient];
+        emit PatientRemoved(_patient);
     }
     // 患者データの閲覧権限付与
     function approveViewData(address _patient, address _viewer) public onlyMsgSender(_patient) {

@@ -124,6 +124,19 @@ contract MedicalDatabaseTest is Test {
         vm.stopPrank();
     }
 
+    function testRemovePatient() public  {
+        vm.startPrank(patient);
+        Enum.BloodType bloodType = Enum.BloodType.O;
+        string memory name = "John Smith";
+        medicalDatabase.registerPatient(patient, name, bloodType);
+        vm.stopPrank();
+        vm.startPrank(doctor);
+        medicalDatabase.removePatient(patient);
+        vm.stopPrank();
+        vm.expectRevert(bytes("patient does not exist"));
+        medicalDatabase.getPatientData(patient);
+    }
+
     function testRevert_OnlyDoctor() public {
         vm.startPrank(patient);
         Enum.BloodType bloodType = Enum.BloodType.O;
